@@ -1,0 +1,12 @@
+:set hintchars=uiopjklnm
+:nnoremap k 5k
+:nnoremap j 5j
+:nnoremap } 20j
+:nnoremap m 20j
+:nnoremap { 20k
+:nnoremap , 20k
+:nnoremap ; f
+:nnoremap u <C-o>
+:nnoremap i <C-i>
+:nnoremap p gt
+:nnoremap o gT

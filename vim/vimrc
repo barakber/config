@@ -1,0 +1,177 @@
+" vim +BundleInstall +qall
+
+set noswapfile
+
+let mapleader = ","
+set t_Co=256
+set clipboard=unnamedplus
+set gfn=Bitstream\ Vera\ Sans\ Mono\ 11
+set expandtab
+set tabstop=4
+set shiftwidth=4
+set autoindent
+set autoindent
+set showmatch
+set nu
+set incsearch
+set nows
+set nowrap
+set ic
+set hlsearch
+syn on
+set ls =2
+set smarttab
+set linebreak
+set smartindent
+set cindent
+set tags=tags;/
+set hls
+set vb
+set t_vb=
+set backspace=2
+set encoding=utf-8
+set grepprg=ag
+" set ttyscroll=1
+
+
+"autocmd ColorScheme * highlight RedundantWhitespace ctermbg=red guibg=red
+"highlight RedundantWhitespace ctermbg=red guibg=red
+"match RedundantWhitespace /\s\+$\| \+\ze\t\|\S\+\s\+$\|\S\+\t\+\ze \|^\s\+$/
+highlight DiffAdd ctermbg=DarkGreen gui=none guifg=bg guibg=Green
+highlight DiffDelete ctermbg=DarkRed gui=none guifg=bg guibg=Red
+highlight DiffChange ctermbg=DarkBlue gui=none guifg=bg guibg=Yellow
+highlight DiffText ctermbg=DarkGray gui=none guifg=bg guibg=Magenta
+" highlight! link DiffText MatchParen
+" autocmd FileType c set omnifunc=ccomplete#Complete highlight=RedundantWhitespace ctermbg=red guibg=red
+set nocompatible               " be iMproved
+filetype off                   " required!
+
+set rtp+=~/.vim/bundle/vundle/
+call vundle#rc()
+
+
+"----------------------------
+" Hex Mode
+
+" ex command for toggling hex mode - define mapping if desired
+command -bar Hexmode call ToggleHex()
+
+" helper function to toggle hex mode
+function ToggleHex()
+  " hex mode should be considered a read-only operation
+  " save values for modified and read-only for restoration later,
+  " and clear the read-only flag for now
+  let l:modified=&mod
+  let l:oldreadonly=&readonly
+  let &readonly=0
+  let l:oldmodifiable=&modifiable
+  let &modifiable=1
+  if !exists("b:editHex") || !b:editHex
+    " save old options
+    let b:oldft=&ft
+    let b:oldbin=&bin
+    " set new options
+    setlocal binary " make sure it overrides any textwidth, etc.
+    let &ft="xxd"
+    " set status
+    let b:editHex=1
+    " switch to hex editor
+    %!xxd
+  else
+    " restore old options
+    let &ft=b:oldft
+    if !b:oldbin
+      setlocal nobinary
+    endif
+    " set status
+    let b:editHex=0
+    " return to normal editing
+    %!xxd -r
+  endif
+  " restore values for modified and read only state
+  let &mod=l:modified
+  let &readonly=l:oldreadonly
+  let &modifiable=l:oldmodifiable
+endfunction
+
+" let Vundle manage Vundle
+" required!
+Bundle 'gmarik/vundle'
+"Bundle 'molokai'
+Bundle 'nelstrom/vim-mac-classic-theme'
+Bundle 'altercation/vim-colors-solarized'
+Bundle 'gmarik/ingretu'
+Bundle 'tpope/vim-fugitive'
+Bundle 'Lokaltog/vim-easymotion'
+Bundle 'rstacruz/sparkup', {'rtp': 'vim/'}
+Bundle 'taglist.vim'
+Bundle 'L9'
+Bundle 'FuzzyFinder'
+Bundle 'rosenfeld/conque-term'
+Bundle 'kien/ctrlp.vim'
+Bundle 'tacahiroy/ctrlp-funky'
+Bundle 'ctags.vim'
+Bundle 'majutsushi/tagbar'
+Bundle 'adinapoli/cumino'
+" Bundle 'webBrowser'
+" Bundle 'cscope.vim'
+Bundle 'chazy/cscope_maps'
+Bundle 'vivien/vim-addon-linux-coding-style'
+" Bundle 'eagletmt/ghcmod-vim'
+" Bundle 'scrooloose/syntastic'
+Bundle 'scrooloose/nerdtree'
+" Bundle 'Valloric/YouCompleteMe'
+" Bundle 'YankRing.vim'
+Bundle 'goldfeld/vim-seek'
+Bundle 'Lokaltog/powerline'
+Bundle 'rking/ag.vim'
+Bundle 'bitc/vim-hdevtools.git'
+Bundle 'eagletmt/ghcmod-vim'
+Bundle 'Shougo/vimproc.vim'
+" Bundle 'lukerandall/haskellmode-vim'
+Bundle 'EasyGrep'
+
+
+set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
+
+filetype plugin indent on     " required!
+
+let g:ctrlp_extensions = ['funky', 'tags']
+let g:ycm_global_ycm_extra_conf = '~/.vim/bundle/YouCompleteMe/cpp/ycm/.ycm_extra_conf.py'
+let g:Powerline_symbols = 'fancy'
+let g:haddock_browser = "firefox"
+
+
+nnoremap <silent> <F2> :ConqueTermSplit bash<CR>
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+nnoremap <silent> <F5> :SyntasticToggleMode<CR>
+nnoremap <silent> <F8> :TlistToggle<CR>
+" nnoremap <Leader>fu :CtrlPFunky<CR>
+nnoremap <leader>. :CtrlPMRU<cR>
+nnoremap <C-x> :Hexmode<CR>
+nnoremap <silent> ` :bd<CR>
+nnoremap <silent> <F3>  :call UpdateCscope()<CR>
+inoremap <C-x> <Esc>:Hexmode<CR>
+vnoremap <C-x> :<C-U>Hexmode<CR>
+map ; <Leader><Leader>w
+
+au FileType haskell,vhdl,ada let b:comment_leader = '-- '
+au FileType vim let b:comment_leader = '" '
+au FileType c,cpp,java let b:comment_leader = '// '
+au FileType sh,make let b:comment_leader = '# '
+au FileType tex let b:comment_leader = '% '
+noremap <silent> ,c :<C-B>sil <C-E>s/^/<C-R>=escape(b:comment_leader,'\/')<CR>/<CR>:noh<CR>
+noremap <silent> ,u :<C-B>sil <C-E>s/^\V<C-R>=escape(b:comment_leader,'\/')<CR>//e<CR>:noh<CR>
+
+" au FileType haskell nnoremap <buffer> <F1> :HdevtoolsType<CR>
+" au FileType haskell nnoremap <buffer> <silent> <F2> :HdevtoolsClear<CR>
+"
+"
+"
+function! UpdateCscope()
+	!cscope -b -k -q -R
+	cs reset
+endfunction
