@@ -23,6 +23,8 @@ width="$2"   # Width of the preview pane (number of fitting characters)
 height="$3"  # Height of the preview pane (number of fitting characters)
 
 maxln=200    # Stop after $maxln lines.  Can be used like ls | head -n $maxln
+max_file_size_to_read=3147528 # 3 Mb
+file_size=$(stat --printf="%s" "$path")
 
 # Find out something about the file:
 mimetype=$(file --mime-type -Lb "$path")
@@ -36,7 +38,7 @@ try() { output=$(eval '"$@"'); }
 # writes the output of the previouosly used "try" command
 dump() { echo "$output"; }
 
-separator() { echo "----------------------------------------------------------------------------------------"; }
+separator() { [ ! -z "$output" ] && echo "----------------------------------------------------------------------------------------"; }
 
 # a common post-processing function used after most commands
 trim() { head -n "$maxln"; }
@@ -44,9 +46,42 @@ trim() { head -n "$maxln"; }
 # wraps highlight to treat exit code 141 (killed by SIGPIPE) as success
 highlight() { command highlight "$@"; test $? = 0 -o $? = 141; }
 
+try_hexdump()
+{
+    xxd -l 880 "$path" && exit 4 || exit 1
+}
+
+try_md5() 
+{
+    if [ "$file_size" -lt "$max_file_size_to_read" ]; then
+        try md5sum "$path" && { echo -n "md5: "; dump | awk '{print $1}' | trim | fmt -s -w $width; separator; }
+    fi
+}
+
+try_git()
+{
+    try git diff --shortstat "$path" && { dump | grep -q " 1 file" && dump | head -20 | trim | fmt -s -w $width; }
+    try git log --color -n 1 -- "$path" && { dump | grep -q "commit" && dump | head -20 | trim | fmt -s -w $width; separator; }
+}
+
+try_elf_headers()
+{
+    try readelf -hd "$path" && { dump | grep "Class:\|Data:\|ABI:\|Type:\|Machine:\|(NEEDED)" | trim; separator; }
+}
+ 
+try_elf_rodata_strings()
+{
+    if [ "$file_size" -lt "$max_file_size_to_read" ]; then
+        try readelf -x .rodata "$path" && { dump | sed '1,2d' | sed 's/^.\{12\}\(.\{36\}\).*$/\1/' | xxd -r -p | strings | trim ; separator; }
+    else
+        try_hexdump
+    fi
+}
+
 #----------------------------------------------------------------------------------------
 on_text()
 {
+        try_git
         # Syntax highlight for text files:
         try highlight --out-format=ansi "$path" && { dump | trim; exit 5; } || exit 2
 }
@@ -81,14 +116,14 @@ on_media()
 
 on_elf() 
 { 
-        try readelf -hd "$path" && { dump | grep "Class:\|Data:\|ABI:\|Type:\|Machine:\|(NEEDED)" | trim | fmt -s -w $width; separator; }
-        try readelf -x .rodata "$path" && { dump | sed '1,2d' | sed 's/^.\{12\}\(.\{36\}\).*$/\1/' | xxd -r -p | strings | trim | fmt -s -w $width; separator; }
-        try strings "$path" && { dump | trim | fmt -s -w $width; exit 4; }
+        try_elf_headers
+        try_elf_rodata_strings
+        exit 5;
 }
 
 on_binary()
 {
-        xxd -l 880 "$path" && exit 4 || exit 1
+    try_hexdump
 }
 
 on_pdf()
@@ -114,6 +149,7 @@ on_image()
 }
 #----------------------------------------------------------------------------------------
 
+try_md5
 case "$extension" in
     # Archive extensions:
     7z|a|ace|alz|arc|arj|bz|bz2|cab|cpio|deb|gz|jar|lha|lz|lzh|lzma|lzo|\
