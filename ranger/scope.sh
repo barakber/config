@@ -78,6 +78,15 @@ try_elf_rodata_strings()
     fi
 }
 
+try_java_decompile()
+{
+    tempfile=$(mktemp --suffix=.java)
+    jad -p "$path" > "$tempfile" 
+    try highlight --out-format=ansi "$tempfile" && { dump | trim; }
+    rm "$tempfile"
+    exit 5
+}
+
 #----------------------------------------------------------------------------------------
 on_text()
 {
@@ -137,6 +146,11 @@ on_pcap()
         try tshark -c 55 -r "$path" && { dump | trim; exit 5; } || exit 1
 }
 
+on_class()
+{
+    try_java_decompile
+}
+
 on_torrent()
 {
         try transmission-show "$path" && { dump | trim; exit 5; } || exit 1
@@ -167,6 +181,8 @@ case "$extension" in
         { on_elf; };;
     pcap)
         { on_pcap; };;
+    class)
+        { on_class; };;
     bin)
         { on_binary; };;
 esac
@@ -178,6 +194,8 @@ case "$mimetype" in
         { on_media; };;
     application/x-executable|application/x-sharedlib)
         { on_elf; };;
+    application/x-java-applet)
+        { on_class; };;
     #image/*)
     #    { on_image; };;
     *)
