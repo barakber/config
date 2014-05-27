@@ -215,6 +215,10 @@ case "$mimetype" in
         { on_text; };;
     video/* | audio/*) 
         { on_media; };;
+    application/zip)
+        { on_archive; };;
+    application/pdf)
+        { on_pdf; };;
     application/x-iso9660-image)
         { on_iso; };;
     application/x-executable|application/x-sharedlib)
