@@ -217,6 +217,8 @@ case "$mimetype" in
         { on_media; };;
     application/zip)
         { on_archive; };;
+    application/x-gzip)
+        { on_archive; };;
     application/pdf)
         { on_pdf; };;
     application/x-iso9660-image)
