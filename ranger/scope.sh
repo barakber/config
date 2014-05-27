@@ -131,6 +131,12 @@ on_elf()
         exit 5;
 }
 
+on_pe()
+{
+    try pev -cd "$path" && { dump | trim; separator; }
+    try objdump -p "$path" && { dump | trim; separator; exit 5;} || exit 1
+}
+
 on_binary()
 {
     try_hexdump
@@ -180,6 +186,8 @@ case "$extension" in
         { on_text; };;
     elf|o|so|ko)
         { on_elf; };;
+    dll|exe)
+        { on_pe; };;
     pcap)
         { on_pcap; };;
     class)
@@ -195,6 +203,8 @@ case "$mimetype" in
         { on_media; };;
     application/x-executable|application/x-sharedlib)
         { on_elf; };;
+    application/x-dosexec)
+        { on_pe;  };;
     application/x-java-applet)
         { on_class; };;
     #image/*)
