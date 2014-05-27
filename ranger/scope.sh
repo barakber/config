@@ -129,6 +129,11 @@ on_media()
         try mediainfo "$path" && { dump | trim | sed 's/  \+:/: /;';  exit 5; } || exit 1
 }
 
+on_iso()
+{
+    try isoinfo -d -i "$path" && { dump | trim; exit 0; } || try_hexdump
+}
+
 on_elf() 
 { 
         try_elf_headers
@@ -195,6 +200,8 @@ case "$extension" in
         { on_elf; };;
     dll|exe)
         { on_pe; };;
+    iso)
+        { on_iso; };;
     pcap)
         { on_pcap; };;
     class)
@@ -208,6 +215,8 @@ case "$mimetype" in
         { on_text; };;
     video/* | audio/*) 
         { on_media; };;
+    application/x-iso9660-image)
+        { on_iso; };;
     application/x-executable|application/x-sharedlib)
         { on_elf; };;
     application/x-dosexec)
