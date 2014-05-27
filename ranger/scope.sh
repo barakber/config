@@ -92,7 +92,8 @@ on_text()
 {
         try_git
         # Syntax highlight for text files:
-        try highlight --out-format=ansi "$path" && { dump | trim; exit 5; } || exit 2
+        try highlight --out-format=ansi "$path" && { dump | trim; exit 5; } || cat "$path"
+        exit 0
 }
 
 on_archive()
