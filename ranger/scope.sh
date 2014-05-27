@@ -96,6 +96,11 @@ on_text()
         exit 0
 }
 
+on_docx()
+{
+    try docx2txt "$path" - && { dump | trim; exit 5;} || try_hexdump
+}
+
 on_archive()
 {
         try als "$path" && { dump | trim; exit 0; }
@@ -176,6 +181,8 @@ case "$extension" in
     7z|a|ace|alz|arc|arj|bz|bz2|cab|cpio|deb|gz|jar|lha|lz|lzh|lzma|lzo|\
     rpm|rz|t7z|tar|tbz|tbz2|tgz|tlz|txz|tZ|tzo|war|xpi|xz|Z|zip)
         { on_archive; };;
+    docx)
+        { on_docx; };;
     rar)
         { on_rar; };;
     pdf) 
