@@ -1,4 +1,4 @@
-" vim +BundleInstall +qall
+" vim +PluginInstall +qall
 
 set noswapfile
 
@@ -46,8 +46,6 @@ highlight DiffText ctermbg=DarkGray gui=none guifg=bg guibg=Magenta
 set nocompatible               " be iMproved
 filetype off                   " required!
 
-set rtp+=~/.vim/bundle/vundle/
-call vundle#rc()
 
 
 "----------------------------
@@ -94,44 +92,42 @@ function ToggleHex()
   let &modifiable=l:oldmodifiable
 endfunction
 
+set rtp+=~/.vim/bundle/Vundle.vim/
+call vundle#rc()
 " let Vundle manage Vundle
 " required!
-Bundle 'gmarik/vundle'
-"Bundle 'molokai'
-Bundle 'nelstrom/vim-mac-classic-theme'
-Bundle 'altercation/vim-colors-solarized'
-Bundle 'gmarik/ingretu'
-Bundle 'tpope/vim-fugitive'
-Bundle 'Lokaltog/vim-easymotion'
-Bundle 'rstacruz/sparkup', {'rtp': 'vim/'}
-Bundle 'taglist.vim'
-Bundle 'L9'
-Bundle 'FuzzyFinder'
-Bundle 'rosenfeld/conque-term'
-Bundle 'kien/ctrlp.vim'
-Bundle 'tacahiroy/ctrlp-funky'
-Bundle 'ctags.vim'
-Bundle 'majutsushi/tagbar'
-Bundle 'adinapoli/cumino'
-" Bundle 'webBrowser'
-" Bundle 'cscope.vim'
-Bundle 'chazy/cscope_maps'
-Bundle 'vivien/vim-addon-linux-coding-style'
-" Bundle 'eagletmt/ghcmod-vim'
-" Bundle 'scrooloose/syntastic'
-Bundle 'scrooloose/nerdtree'
-" Bundle 'Valloric/YouCompleteMe'
-" Bundle 'YankRing.vim'
-Bundle 'goldfeld/vim-seek'
-Bundle 'Lokaltog/powerline'
-Bundle 'rking/ag.vim'
-Bundle 'bitc/vim-hdevtools.git'
-Bundle 'eagletmt/ghcmod-vim'
-Bundle 'Shougo/vimproc.vim'
-" Bundle 'lukerandall/haskellmode-vim'
-Bundle 'EasyGrep'
-
-
+Plugin 'gmarik/vundle'
+Plugin 'nelstrom/vim-mac-classic-theme'
+Plugin 'altercation/vim-colors-solarized'
+Plugin 'tpope/vim-fugitive'
+Plugin 'Lokaltog/vim-easymotion'
+Plugin 'taglist.vim'
+Plugin 'rosenfeld/conque-term'
+Plugin 'kien/ctrlp.vim'
+Plugin 'tacahiroy/ctrlp-funky'
+Plugin 'ctags.vim'
+Plugin 'majutsushi/tagbar'
+Plugin 'chazy/cscope_maps'
+Plugin 'vivien/vim-addon-linux-coding-style'
+Plugin 'scrooloose/nerdtree'
+Plugin 'Lokaltog/powerline'
+Plugin 'rking/ag.vim'
+Plugin 'webBrowser'
+" Plugin 'FuzzyFinder'
+" Plugin 'goldfeld/vim-seek'
+" Plugin 'Shougo/vimproc.vim'
+" Plugin 'EasyGrep'
+" Plugin 'L9'
+" Plugin 'gmarik/ingretu'
+" Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
+" Plugin 'bitc/vim-hdevtools.git'
+" Plugin 'eagletmt/ghcmod-vim'
+" Plugin 'scrooloose/syntastic'
+" Plugin 'adinapoli/cumino'
+" Plugin 'cscope.vim'
+" Plugin 'lukerandall/haskellmode-vim'
+" Plugin 'Valloric/YouCompleteMe'
+" Plugin 'YankRing.vim'
 set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
 
 filetype plugin indent on     " required!
