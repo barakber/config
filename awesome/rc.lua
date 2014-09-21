@@ -15,71 +15,186 @@ function random_wallpaper()
 end
 awful.hooks.timer.register(60 * 10, random_wallpaper) 
 
-
-function battery_usage()
-    file = io.open("/sys/class/power_supply/BAT0/capacity")
-    line1 = file:read()
-    file:close()
-    return "|bat: " .. line1 .. "%|"
+Ticker = {}
+Ticker.__index = Ticker
+function Ticker.create(width)
+    local ticker = {}
+    setmetatable(ticker, Ticker)
+    ticker.width  = width
+    ticker.cursor = 1
+    ticker.text = "                           "
+    return ticker
 end
-batteryinfo = widget({type = "textbox", align = "right"})
-awful.hooks.timer.register(1, function() batteryinfo.text = battery_usage() end)
 
-jiffies = 0
-function cpu_usage()
+function Ticker:render()
+    part1 = string.sub(self.text, self.cursor, self.cursor + self.width)
+    left = self.cursor + self.width - self.text:len()
+    if (self.cursor + self.width > self.text:len()) then
+        part2 = string.sub(self.text, 1, (self.cursor + self.width) - (self.text:len()))
+    else
+        part2 = ""
+    end
+    self.cursor = (self.cursor + 1) % (self.text:len())
+    if self.cursor == 0 then
+        self.cursor = 1
+    end
+    return "|<span color='black' font='Courier New 10'><b>" .. part1 .. part2 .. "</b></span>|"
+end
+
+function Ticker:refresh()
+    process = io.popen("./hn_articles.py")    
+    self.text = process:read() .. " "
+    self.cursor = 1
+    process:close()
+end
+--ticker_obj = Ticker.create(24)
+--ticker_obj:refresh()
+--ticker = widget({type = "textbox", align = "right" })
+--awful.hooks.timer.register(10 * 60, function() ticker_obj:refresh() end)
+--awful.hooks.timer.register(0.175, function() ticker.text = ticker_obj:render() end)
+
+InfoBar = {}
+InfoBar.__index = InfoBar
+function InfoBar.create()
+    local infobar = {}
+    setmetatable(infobar, InfoBar)
+    infobar.counter     = 0
+    infobar.battery     = 0
+    infobar.temperature = 0
+    infobar.jiffies     = 0
+    infobar.cpu         = 0
+    infobar.mem_total   = 0
+    infobar.mem_free    = 0
+    infobar.mem_used    = 0
+    infobar.disk_sda3   = 0
+    infobar.disk_sda6   = 0
+    infobar.eth0_ip     = nil
+    infobar.eth0_rx     = 0
+    infobar.eth0_delta_rx = 0
+    infobar.eth0_tx     = 0
+    infobar.eth0_delta_tx = 0
+    infobar.wlan0_ip    = nil
+    infobar.wlan0_rx    = 0
+    infobar.wlan0_delta_rx = 0
+    infobar.wlan0_tx    = 0
+    infobar.wlan0_delta_tx = 0
+    infobar.ssid        = nil
+    return infobar
+end
+
+function InfoBar:render()
+    self.counter = self.counter + 1
+    self:get_battery()
+    self:get_temperature()
+    self:get_cpu()
+    self:get_memory()
+    self:get_network_usage()
+    self:get_disk()
+    eth0_part = ""
+    if self.eth0_ip ~= nil then
+        eth0_part = string.format("<span color='#B8704D'>E: %s/%0.4d/%0.4d</span>|", self.eth0_ip, self.eth0_delta_rx, self.eth0_delta_tx)
+    end
+    wlan0_part = ""
+    if self.wlan0_ip ~= nil then
+        wlan0_part = string.format("<span color='#B8704D'>W: <b>%s</b>/%s/%0.4d/%0.4d</span>|", self.ssid, self.wlan0_ip, self.wlan0_delta_rx, self.wlan0_delta_tx)
+    end
+    main_part = string.format("|%s%s<span color='#FF8080'>/: %.1fGb</span>|<span color='#FF8080'>/x: %.1fGb</span>|<span color='#F0B2F0'>M: %d/%d</span>|<span color='pink'>C: %0.3d%%</span>|<span color='light blue'>T: %dC</span>|<span color='light green'>B: %0.3d%%</span>|", 
+        wlan0_part, eth0_part, self.disk_sda3 / 1024, self.disk_sda6 / 1024, self.mem_used, self.mem_total, self.cpu, self.temperature, self.battery)
+
+    return main_part
+                            
+end
+
+function InfoBar:get_battery()
+    file = io.open("/sys/class/power_supply/BAT0/capacity")
+    self.battery = tonumber(file:read())
+    file:close()
+end
+
+function InfoBar:get_temperature()
+    process = io.popen("acpi -t | awk {'print $4'}")
+    self.temperature = tonumber(process:read())
+    process:close()
+end
+
+function InfoBar:get_cpu()
     file = io.open("/proc/stat")
     line1 = file:read()
     file:close()
-    local cpu, newjiffies = string.match(line1, "cpu(%d*)\ +(%d+)")
-    if cpu and newjiffies then
-        if not jiffies then
-            jiffies = newjiffies
+    local current_cpu, newjiffies = string.match(line1, "cpu(%d*)\ +(%d+)")
+    if current_cpu and newjiffies then
+        if self.jiffies == 0 then
+            self.jiffies = newjiffies
         end
-        s = "|cpu: " .. string.format("%03d", newjiffies - jiffies) .. "%|"
-        jiffies = newjiffies
+        self.cpu = newjiffies - self.jiffies
+        self.jiffies = newjiffies
     end
-    return s
 end
-cpuinfo = widget({ type = "textbox", align = "right" }) 
-awful.hooks.timer.register(1, function() cpuinfo.text = cpu_usage() end)
-
-rx = 0
-tx = 0
-function network_usage(interface)
-    _f1 = io.open("/sys/class/net/" .. interface .. "/statistics/rx_bytes")
-    new_rx = math.floor(tonumber(_f1:read()) / 1024)
-    _f1:close()
-    _f2 = io.open("/sys/class/net/" .. interface .. "/statistics/tx_bytes")
-    new_tx = math.floor(tonumber(_f2:read()) / 1024)
-    _f2:close()
-    s = "|" .. interface .. ": " .. string.format("%04d", new_rx - rx) .. "/" .. string.format("%04d", new_tx - tx) .. " Kbps|"
-    rx = new_rx
-    tx = new_tx
-    return s
-end
-netinfo = widget({type = "textbox", align = "right" })
-awful.hooks.timer.register(1, function() netinfo.text = network_usage("eth0") end)
-
-function disk_usage()
-    file = io.popen("df -v /x")
-    file:read()
-    line1 = file:read()
-    file:close()
-    local available = math.floor(tonumber(string.match(line1, "/dev/sda6 +%d+ +%d+ +(%d+)")) / 1000)
-    return "|/x: " .. available .. "Mb |"
-end
-diskinfo = widget({type = "textbox", align = "right" })
-awful.hooks.timer.register(10, function() diskinfo.text = disk_usage() end)
-
-function mem_usage()
+function InfoBar:get_memory()
     file = io.open("/proc/meminfo")
-    total = math.floor(tonumber(string.match(file:read(), "MemTotal: *(.*) kB")) / 1000)
-    free  = math.floor(tonumber(string.match(file:read(), "MemFree: *(.*) kB")) / 1000)
+    self.mem_total = math.floor(tonumber(string.match(file:read(), "MemTotal: *(.*) kB")) / 1000)
+    self.mem_free  = math.floor(tonumber(string.match(file:read(), "MemFree: *(.*) kB")) / 1000)
+    self.mem_used  = self.mem_total - self.mem_free
     file:close()
-    return "|mem: " .. (total - free) .. "/" .. total .. "Mb|"
 end
-meminfo = widget({ type = "textbox", align = "right" })
-awful.hooks.timer.register(1, function() meminfo.text = mem_usage() end)
+
+function InfoBar:get_disk()
+    process = io.popen("df -v /")
+    process:read()
+    self.disk_sda3 = math.floor(tonumber(string.match(process:read(), "/dev/sda3 +%d+ +%d+ +(%d+)")) / 1000)
+    process:close()
+    
+    process = io.popen("df -v /x")
+    process:read()
+    self.disk_sda6 = math.floor(tonumber(string.match(process:read(), "/dev/sda6 +%d+ +%d+ +(%d+)")) / 1000)
+    process:close()
+end
+
+function InfoBar:get_network_usage()
+    process = io.popen("ifconfig eth0 | sed -n 's/^.*inet addr:\\([0-9.]*\\).*$/\\1/p'")
+    self.eth0_ip = process:read()
+    process:close()
+
+    process = io.popen("ifconfig wlan0 | sed -n 's/^.*inet addr:\\([0-9.]*\\).*$/\\1/p'")
+    self.wlan0_ip = process:read()
+    process:close()
+
+    if self.eth0_ip ~= nil then
+        _f1 = io.open("/sys/class/net/eth0/statistics/rx_bytes")
+        new_rx = math.floor(tonumber(_f1:read()) / 1024)
+        self.eth0_delta_rx = new_rx - self.eth0_rx
+        self.eth0_rx = new_rx
+        _f1:close()
+
+        _f1 = io.open("/sys/class/net/eth0/statistics/tx_bytes")
+        new_tx = math.floor(tonumber(_f1:read()) / 1024)
+        self.eth0_delta_tx = new_tx - self.eth0_tx
+        self.eth0_tx = new_tx
+        _f1:close()
+    end
+
+    if self.wlan0_ip ~= nil then
+        process = io.popen("iwgetid -r")
+        self.ssid = process:read()
+        process:close()
+    
+        _f1 = io.open("/sys/class/net/wlan0/statistics/rx_bytes")
+        new_rx = math.floor(tonumber(_f1:read()) / 1024)
+        self.wlan0_delta_rx = new_rx - self.wlan0_rx
+        self.wlan0_rx = new_rx
+        _f1:close()
+
+        _f1 = io.open("/sys/class/net/wlan0/statistics/tx_bytes")
+        new_tx = math.floor(tonumber(_f1:read()) / 1024)
+        self.wlan0_delta_tx = new_tx - self.wlan0_tx
+        self.wlan0_tx = new_tx
+        _f1:close()
+    end
+end
+
+infobar = InfoBar.create()
+info = widget({type = "textbox", align = "right" })
+awful.hooks.timer.register(1, function() info.text = infobar:render() end)
 
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
@@ -252,11 +367,8 @@ for s = 1, screen.count() do
         },
         mylayoutbox[s],
         mytextclock,
-        batteryinfo,
-        cpuinfo,
-        meminfo,
-        netinfo,
-        diskinfo,
+        --ticker,
+        info,
         s == 1 and mysystray or nil,
         mytasklist[s],
         layout = awful.widget.layout.horizontal.rightleft
@@ -443,8 +555,10 @@ awful.rules.rules = {
     { rule = { class = "gimp" },
       properties = { floating = true } },
    -- Set Firefox to always map on tags number 2 of screen 1.
-    { rule = { class = "Firefox" },
-      properties = { tag = tags[1][4] } },
+--    { rule = { class = "Firefox" },
+--      properties = { tag = tags[1][4] } },
+    { rule = { class = "knotes" },
+      properties = { tag = tags[1][6] } },
     { rule = { class = "Rhythmbox" },
       properties = { tag = tags[1][9] } },
 }
@@ -484,3 +598,4 @@ client.add_signal("unfocus", function(c) c.border_color = "#000020" end) --beaut
 -- }}}
 awful.util.spawn_with_shell("urxvtd -q -o -f")
 awful.util.spawn_with_shell("xscreensaver -no-splash")
+awful.util.spawn_with_shell("nm-applet --sm-disable")
